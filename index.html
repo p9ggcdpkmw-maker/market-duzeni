@@ -1,417 +1,583 @@
 <!DOCTYPE html>
-<html lang="tr">
-<head>
-<meta charset="utf-8">
+<html lang="tr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <title>Market Düzeni 3D</title>
 <style>
-    :root { --pn: rgba(255,255,255,.9); --tx: #333; --ac: #ff6b6b; --ok: #51cf66; --warn: #fcc419; }
-    html, body { margin:0; height:100%; overflow:hidden; background:#222; font-family: system-ui, sans-serif; user-select:none; }
-    canvas#c { display:block; width:100%; height:100%; touch-action:none; }
-    #orientation-overlay { position:fixed; inset:0; background:#1a1a1a; color:#fff; display:none; place-items:center; text-align:center; z-index:999; font-size:20px; font-weight:bold; }
-    @media (orientation: portrait) { #orientation-overlay { display: grid; } }
-    
-    .panel { position: fixed; background: var(--pn); border-radius: 12px; color: var(--tx); padding: 8px 16px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.15); backdrop-filter: blur(5px); }
-    #hud { top: 15px; left: 15px; display: flex; gap: 15px; font-size: 16px; pointer-events: none; }
-    #bag { top: 15px; right: 15px; min-width: 140px; font-size: 14px; pointer-events: none; }
-    
-    #crosshair { position: fixed; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 4px #000; pointer-events: none; transition: transform 0.1s, border-color 0.1s; }
-    #crosshair.active { transform: scale(1.6); border-color: var(--warn); }
-
-    #joy { position: fixed; left: 25px; bottom: 25px; width: 110px; height: 110px; border-radius: 50%; background: rgba(0,0,0,0.15); border: 2px solid rgba(255,255,255,0.4); touch-action: none; z-index: 10; display: none; }
-    #knob { position: absolute; left: 30px; top: 30px; width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.8); box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
-    
-    #tbtn { position: fixed; right: 25px; bottom: 25px; display: none; grid-template-columns: repeat(2, 60px); gap: 12px; z-index: 10; }
-    #tbtn button { width: 60px; height: 60px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.6); background: rgba(0,0,0,0.3); color: #fff; font-size: 24px; display: grid; place-items: center; touch-action: none; backdrop-filter: blur(2px); }
-    #tbtn button:active { background: rgba(255,255,255,0.5); transform: scale(0.9); }
-    .touch #joy, .touch #tbtn { display: grid; }
-
-    #menu, #tree { position: fixed; inset: 0; background: rgba(20,20,20,0.8); backdrop-filter: blur(8px); display: grid; place-items: center; z-index: 20; }
-    #menu[hidden], #tree[hidden] { display: none; }
-    .card { background: #fff; border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.3); }
-    .card h2 { margin: 0 0 15px; color: #2b2b2b; font-size: 26px; }
-    .card p { color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 20px; }
-    button.btn { font: inherit; font-weight: 700; border: none; border-radius: 10px; padding: 12px 24px; background: var(--ac); color: #fff; cursor: pointer; transition: 0.2s; font-size: 16px; }
-    button.btn:hover { background: #ff5252; transform: translateY(-2px); }
-    button.btn.sec { background: #e0e0e0; color: #333; }
-    
-    #map { position: fixed; left: 15px; bottom: 15px; border-radius: 12px; border: 2px solid #fff; background: rgba(255,255,255,0.9); pointer-events: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-    #hint { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
-    #toast { position: fixed; left: 50%; top: 70px; transform: translateX(-50%); background: var(--ok); color: #fff; padding: 10px 20px; border-radius: 20px; font-weight: bold; opacity: 0; transition: 0.3s; pointer-events: none; z-index: 30;}
-</style>
-</head>
-<body>
-<div id="orientation-overlay"><div><div style="font-size:50px; margin-bottom:20px;">📱↻</div>Lütfen telefonunuzu yatay çevirin.</div></div>
+:root{--pn:rgba(255,255,255,.9);--tx:#2b2118;--ac:#e5484d;--ok:#3fa34d;box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--pn:rgba(32,29,40,.9);--tx:#f3eadb}}
+:root[data-theme="dark"]{--pn:rgba(32,29,40,.9);--tx:#f3eadb}
+html,body{margin:0;height:100%;overflow:hidden;background:#222;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;user-select:none}
+canvas#c{display:block;width:100%;height:100%}
+.pn{background:var(--pn);color:var(--tx);border-radius:12px;padding:6px 12px;font-weight:700;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+#hud{position:fixed;top:10px;left:10px;display:flex;gap:8px;font-size:15px}
+#bag{position:fixed;top:10px;right:10px;min-width:150px;font-size:14px}
+#bag div{padding:2px 6px;border-radius:7px;margin:2px 0}#bag .s{background:var(--ac);color:#fff}
+#bag small{display:block;opacity:.7;font-weight:500;margin-top:4px}
+#cross{position:fixed;left:50%;top:50%;width:8px;height:8px;margin:-4px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 3px #000;pointer-events:none}
+#toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);font-size:16px;opacity:0;transition:opacity .3s;pointer-events:none}
+#bar{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);display:flex;gap:8px}
+.sl{position:relative;width:66px;height:66px;border-radius:12px;background:var(--pn);color:var(--tx);box-shadow:0 3px 0 rgba(0,0,0,.3);overflow:hidden;text-align:center;cursor:pointer}
+.sl i{font-style:normal;font-size:28px;display:block;margin-top:8px}.sl b{position:absolute;left:5px;top:2px;font-size:12px}
+.sl small{position:absolute;bottom:2px;left:0;right:0;font-size:10px;font-weight:700}
+.sl u{position:absolute;inset:0;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;font-weight:800;text-decoration:none;transform-origin:bottom}
+.sl.on{outline:3px solid #ffd23f}
+#map{position:fixed;left:10px;bottom:10px;border-radius:12px;box-shadow:0 2px 0 rgba(0,0,0,.4);border:2px solid var(--pn)}
+#map.big{left:50%;top:50%;bottom:auto;transform:translate(-50%,-50%);z-index:5}
+#tree,#start,#end{position:fixed;inset:0;background:rgba(0,0,0,.6);display:grid;place-items:center;z-index:9}
+#tree[hidden],#start[hidden],#end[hidden]{display:none}
+.card{background:var(--pn);color:var(--tx);border-radius:18px;padding:18px 22px;max-width:560px;width:90%}
+.card h2{margin:0 0 8px}.card p{margin:4px 0;font-size:14px;line-height:1.5}
+.row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(128,128,128,.3)}
+.row>div{flex:1}.ic{font-size:26px}
+button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:7px 14px;background:var(--ac);color:#fff;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
+#hud,#bag,#cross,#toast{pointer-events:none}
+canvas#c{touch-action:none}
+#joy,#tbtn,#hud button{display:none}
+#joy{position:fixed;left:18px;bottom:18px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.25);border:3px solid rgba(255,255,255,.6);touch-action:none;z-index:4}
+#knob{position:absolute;left:35px;top:35px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.85)}
+#tbtn{position:fixed;right:14px;bottom:14px;grid-template-columns:repeat(3,62px);gap:8px;z-index:4;touch-action:none}
+#tbtn button,#hud button{padding:0;height:62px;border-radius:50%;font-size:24px;background:rgba(32,29,40,.65);border:2px solid rgba(255,255,255,.6);touch-action:none}
+#tbtn #bPick{background:rgba(229,72,77,.85)}#tbtn #bPlace{background:rgba(63,163,77,.85)}
+.touch #joy{display:block}.touch #tbtn{display:grid}.touch #hud button{display:block;height:34px;width:40px;border-radius:10px;font-size:18px;pointer-events:auto}
+.touch .d,.m{display:none}.touch .m{display:block}
+.touch #map:not(.big){bottom:auto;top:52px}.touch #bag{font-size:12px;min-width:110px}.touch #bag small{display:none}
+.touch .sl{width:50px;height:50px}.touch .sl i{font-size:20px;margin-top:6px}.touch .sl small{font-size:8px}
+.touch #bar{bottom:90px}
+#sub{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);font-size:22px;max-width:86%;text-align:center;pointer-events:none;opacity:0;visibility:hidden;z-index:3}#hint{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);opacity:0;transition:opacity .12s;pointer-events:none;font-size:16px;white-space:nowrap;z-index:3}.touch #hint{bottom:150px}
+#menu{position:fixed;inset:0;display:grid;place-items:center;z-index:12;background:radial-gradient(circle at 50% 30%,#2b4a66,#0b1220)}#menu[hidden]{display:none}
+.card{position:relative;max-height:92vh;overflow:auto}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.btns button{flex:1;min-width:130px;padding:12px;font-size:16px}.sec{background:#59606b}
+.th{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:2px 54px 8px 0;background:var(--pn)}.th h2{margin:0}#stars{font-weight:800}
+.x{position:absolute;right:0;top:0;width:44px;height:44px;border-radius:50%;padding:0;font-size:20px;background:#59606b}
+.row small{font-size:12px;opacity:.85}.row button{min-width:66px}
+#map.big{cursor:pointer}
+#bag{top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px))}
+#joy{left:calc(18px + env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+#tbtn{right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+#hud{top:calc(10px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));flex-wrap:wrap;gap:6px;max-width:calc(100vw - 180px)}
+.touch #hud .pn{font-size:12px;padding:3px 8px}.touch .x{width:50px;height:50px;font-size:24px}
+.touch #hud button{height:36px;width:42px}
+@media (max-width:800px),(max-height:520px){.card{padding:12px 14px;width:94%;max-height:94vh}.card h2{font-size:18px}.card p{font-size:12px;line-height:1.4}.row{gap:6px;padding:5px 0}.row .ic{font-size:20px}.btns button{padding:10px;font-size:14px;min-width:110px}#bag{font-size:11px}}
+#wrong-shelf-overlay { position:fixed; inset:0; pointer-events:none; box-shadow: inset 0 0 100px rgba(255,0,0,0); transition: box-shadow 0.2s; z-index: 2; }
+</style></head><body>
 <canvas id="c"></canvas>
-
-<div id="hud" class="panel">
-    <div>⭐ <span id="st">8</span></div>
-    <div>📦 <span id="pl">0/120</span></div>
-</div>
-<div id="bag" class="panel"><b>Sepet: 0/5</b></div>
-
-<div id="crosshair"></div>
-<div id="hint"></div>
-<div id="toast"></div>
-
+<div id="wrong-shelf-overlay"></div>
+<div id="hud"><div class="pn" id="st">⭐ 8</div><div class="pn" id="pl">0/0</div><div class="pn" id="tm">0:00</div><div class="pn" id="mn">$0.0</div><button id="bPause">☰</button><button id="bMap">🗺</button><button id="bTree">⭐</button></div>
 <div id="joy"><i id="knob"></i></div>
-<div id="tbtn">
-    <button id="bTree">🌳</button>
-    <button id="bPlace">📥</button>
-    <button id="bPick">✋</button>
-    <button id="bJump">⤴️</button>
-</div>
+<div id="tbtn"><button id="bPrev">◀</button><button id="bNext">▶</button><button id="bDrop">⬇️</button><button id="bJump">⤴️</button><button id="bPlace">📥</button><button id="bPick">✋</button></div>
+<div class="pn" id="bag"></div>
+<div id="cross"></div><div class="pn" id="toast"></div>
+<div id="bar"></div><div class="pn" id="hint"></div><div class="pn" id="sub"></div>
 <canvas id="map" width="200" height="130"></canvas>
-
-<div id="menu">
-    <div class="card">
-        <h2>🛒 Market Düzeni 3D</h2>
-        <p>Robot müdür yine rafları boşaltmış. Her oyun rastgele dağılan ürünleri topla, doğru raflara diz ve çıkışı aç.</p>
-        <button id="mNew" class="btn">🆕 Yeni Oyun</button>
-    </div>
-</div>
-
-<div id="tree" hidden>
-    <div class="card" style="max-width: 600px; text-align: left;">
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #eee; padding-bottom:10px; margin-bottom:10px;">
-            <h2 style="margin:0;">Yetenek Ağacı</h2>
-            <div style="font-size:20px; font-weight:bold;">⭐ <span id="treeStars">8</span></div>
-            <button id="tx" class="btn sec" style="padding:5px 15px;">✕</button>
-        </div>
-        <div id="tl" style="max-height:50vh; overflow-y:auto; padding-right:10px;"></div>
-    </div>
-</div>
-
+<div id="menu"><div class="card"><h2>🛒 Market Düzeni 3D</h2><p id="msave"></p><div class="btns"><button id="mCont" hidden>▶ Devam et</button><button id="mNew">🆕 Yeni oyun</button></div><p id="mload" style="display:none">Market hazırlanıyor… (birkaç saniye sürebilir)</p></div></div>
+<div id="tree" hidden><div class="card"><div class="th"><h2>Beceri Ağacı</h2><span id="stars"></span><button id="tx" class="x">✕</button></div><div id="tl"></div><p>Yıldız: 40 ürün dizince +1, bir ürün rafını tamamlayınca +2. Kapatmak için K.</p></div></div>
+<div id="start"><div class="card"><h2>🛒 Market Düzeni 3D</h2>
+<p class="d"><b>WASD</b> yürü · <b>Fare</b> bak · <b>Sol tık (basılı)</b> yerden al · <b>F / sağ tık (basılı)</b> rafa diz</p>
+<p class="d"><b>Q/E veya tekerlek</b> elindeki ürünü değiştir · <b>G</b> bırak · <b>Boşluk</b> zıpla · <b>1-4</b> beceriler · <b>K</b> beceri ağacı · <b>M</b> harita</p>
+<p class="m">Telefonu <b>yatay</b> tut. Sol joystick yürür, ekranı sürükleyince bakarsın. ✋ basılı tut: nişan aldığın ürünü al · 📥 basılı tut: doğru rafta diz · ◀ ▶ ürün değiştir · ⬇️ bırak · ⤴️ zıpla · 🗺 harita · ⭐ beceri ağacı</p>
+<p>Müdür: <b>Bir robot markete girip raflardaki bütün ürünleri boşalttı ve ortaya yığdı!</b> Hepsini topla ve yerlerine diz. Tüm ürünler yerine dizilmeden çıkış kapısı açılmaz.</p>
+<div class="btns"><button id="go">▶ Başla (tıkla)</button><button id="toMenu" class="sec">☰ Ana menü</button></div></div></div>
+<div id="end" hidden><div class="card"><h2>Market tertemiz! 🎉</h2><p id="res"></p><button onclick="try{localStorage.removeItem('marketDuzeni_v2')}catch(e){};location.reload()">Tekrar oyna</button></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-const T = THREE;
-const touch = matchMedia("(pointer:coarse)").matches;
-if(touch) document.body.classList.add("touch");
+const SAVEKEY="marketDuzeni_v2",$=id=>document.getElementById(id);
+function loadSave(){try{const q=localStorage.getItem(SAVEKEY),o=q?JSON.parse(q):null;return o&&o.v===2?o:null}catch(e){return null}}
+function wipeSave(){try{localStorage.removeItem(SAVEKEY)}catch(e){}}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function boot(sv){
+const T=THREE,touch=matchMedia("(pointer:coarse)").matches,seed=sv?sv.seed:((Math.random()*2147483647)|0);let rnd=mulberry32(seed);
+const R=new T.WebGLRenderer({canvas:$("c"),antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,touch?1.5:2));R.setSize(innerWidth,innerHeight);
+const sc=new T.Scene();sc.background=new T.Color(0xdfe9ef);sc.fog=new T.Fog(0xe8eef2,24,70);
+const cam=new T.PerspectiveCamera(70,innerWidth/innerHeight,.1,300);cam.rotation.order="YXZ";sc.add(cam);
+sc.add(new T.HemisphereLight(0xfff4e0,0x7a7f8c,.78));const dl=new T.DirectionalLight(0xffffff,.5);dl.position.set(6,20,10);sc.add(dl);
 
-// --- MOTOR KURULUMU ---
-const R = new T.WebGLRenderer({canvas: document.getElementById("c"), antialias: true});
-R.setPixelRatio(Math.min(devicePixelRatio, touch ? 1.5 : 2));
-R.setSize(innerWidth, innerHeight);
-R.shadowMap.enabled = true;
+// Karakterin Eli
+const armMesh = new T.Mesh(new T.CylinderGeometry(0.06, 0.08, 0.7, 8), new T.MeshLambertMaterial({color: 0xffdbac}));
+armMesh.position.set(0.3, -0.55, -0.4);
+armMesh.rotation.set(0.5, 0, -0.2);
+cam.add(armMesh);
 
-const sc = new T.Scene();
-sc.background = new T.Color(0xf0ebe1);
-sc.fog = new T.Fog(0xf0ebe1, 20, 60);
+const tex=(w,h,fn)=>{const c=document.createElement("canvas");c.width=w;c.height=h;fn(c.getContext("2d"));return new T.CanvasTexture(c)};
+const hex=c=>"#"+("00000"+c.toString(16)).slice(-6);
 
-const cam = new T.PerspectiveCamera(70, innerWidth/innerHeight, .1, 100);
-cam.rotation.order = "YXZ";
-sc.add(cam);
+/* ---------- ürün çeşitleri (çakma markalarla) ---------- */
+const hr=(i,n)=>{const x=Math.sin(i*12.9898+n*78.233)*43758.5453;return x-Math.floor(x)};
+const CATS=[
+{n:"Meyve",kind:"P",h:.25,v:.1,sh:"a",br:"",items:"-Elma[Kırmızı;Yeşil;Gala]|A|d62f3b,-Armut[Santa Maria;Deveci]|P|b8c63a,-Muz[Yerli;İthal]|B|f2cf3a,-Portakal[Valencia;Kan]|O|f08a1c,-Mandalina|O|f5a030,-Limon|N|f3e03a,-Greyfurt|O|f2a07a,-Üzüm[Siyah;Beyaz;Çekirdeksiz]|Z|7a3a8a,-Çilek|S|d8283e,-Karpuz|w|2f8f46,-Kavun|O|cfd98a,-Şeftali|O|f2a07a,-Kayısı|O|f0b050,-Kiraz|R|a01428,-Vişne|R|8a0f28,-Ananas|Y|d9a830,-Avokado|P|4a6a2a,-Nar|O|a0243a,-İncir|P|7a4a6a,-Kivi|a|8a6a2a,-Mango|q|f0a020"},
+{n:"Sebze",kind:"P",h:.3,v:.1,sh:"a",br:"",items:"-Domates[Salkım;Kokteyl;Pembe]|O|e03a2b,-Salatalık[Silor;Kornişon]|U|3e9a3e,-Biber[Sivri;Dolmalık;Çarliston]|G|4ca83a,-Patlıcan[Kemer;Bostan]|E|5a2a6a,-Havuç|k|f08a1c,-Patates|q|b88a55,-Soğan[Kuru;Taze]|H|c98ab1,-Sarımsak|H|efe8d8,-Kabak|U|8aa84a,-Ispanak|F|2a7a3a,-Marul[Göbek;Kıvırcık]|a|7ac04a,-Brokoli|V|3a8a3a,-Karnabahar|V|e8e0c0,-Mısır|X|e8c030,-Turp|a|d84a6a,-Maydanoz|F|3a8a3a,-Dereotu|F|4a9a4a,-Mantar|M|d8c8b0,-Lahana[Beyaz;Kırmızı]|a|9ac07a,-Tatlı patates|q|c8703a,-Pırasa|L|8ab04a,-Roka|F|3a8a3a"},
+{n:"Fırın",kind:"B",h:.1,v:.08,sh:"e",br:"Fırıncı Cemal,Köy Ekmeği,Usta Fırın,Mahalle Fırını,Simitçi Kemal",items:"Ekmek[Beyaz;Tam buğday;Çavdar;Kepekli]|e|d9a05a,Simit|i|c98a3a,Poğaça[Peynirli;Zeytinli;Sade;Patatesli]|q|dcab68,Açma|q|e0b36e,Kruvasan[Sade;Çikolatalı;Peynirli]|B|e0a85a,Çörek[Sade;Çikolatalı]|q|b9803c,Baget|z|d9a05a,Lavaş|f|efdcb0,Hamburger ekmeği|a|e0b86e,Tost ekmeği|f|e8cf9a"},
+{n:"Süt & Peynir",kind:"K",h:.58,v:.1,sh:"m",br:"Sütkaş,Pınır,Danun,İçmem,Mandıra Abi,İnek Hanım,Sütçü Memo",items:"Süt[Tam yağlı;Yarım yağlı;Laktozsuz]@2|m|e6f2ff,Ayran[Küçük;Büyük]|y|cfe8ff,Yoğurt[Süzme;Tam yağlı;Light]@2|y|f4f1e6,Kefir|l|e6f0e0,Krema|m|f5f0e0,Labne|y|f2efe4,Lor peyniri|y|f2efe4,Krem peynir|y|f6f3ea,Beyaz peynir[Tam yağlı;Light;Tulum]|r|f6f1d8,Kaşar[Taze;Eski;Dilimli]|r|f2cf6a,Örgü peyniri|r|f4e4b8,Mozzarella|r|f8f4e8,Çeçil peyniri|r|f1e8c8,Tereyağı[Sade;Tuzsuz]@2|r|f6e48c,Margarin[Paket;Kase]|y|f2d85a,Yumurta[10’lu;15’li;30’lu]|g|e8d3a8,Puding[Sütlü;Çikolatalı;Vanilyalı]|y|e6c9a0,Sütlaç|y|f1e6cf,Meyveli yoğurt[Çilek;Muz;Şeftali]|y|f0b8c8,Kaymak|y|f8f0d8"},
+{n:"Şarküteri & Et",kind:"M",h:.0,v:.08,sh:"x",br:"Banvıt,Pınır,Namit,Beşliler,Kasap Hüso,Çiftlik Abi",items:"Piliç göğüs[Fileto;Bonfile]|x|f4b6a8,Piliç but|x|efa090,Piliç kanat|x|eaa088,Bütün piliç|x|f0b49c,Dana kıyma|x|c0392b,Kuzu pirzola|x|b83a30,Köfte|x|a8473a,Dana bonfile|x|b5352c,Sucuk[Dana;Baharatlı]|r|8a2f22,Salam[Hindi;Dana]|r|e08a8a,Sosis[Hindi;Dana]|b|e0907a,Jambon|r|f0a0a0,Pastırma|r|7a2a22,Balık[Levrek;Çipura;Somon]|x|d8b0a0,Hamsi|x|a8b0b8,Karides|x|f08a70"},
+{n:"Dondurulmuş",kind:"Z",h:.5,v:.1,sh:"b",br:"Süperfreş,Dr. Ötker,Algada,Pandik,Banvıt,Soğuk Mahalle",items:"Pizza[Margarita;Karışık;Sucuklu;Dört peynirli]|f|e8602a,Dondurma[Vanilya;Çikolata;Çilek;Fıstık]@2|y|f2e0c0,Çubuk dondurma[Çikolata;Meyve;Fındık]|r|7a4a2e,Patates kızartması|p|e8c030,Nugget|b|d9904a,Dondurulmuş sebze[Bezelye;Karışık;Ispanak;Mısır;Brokoli]|p|4a9a5a,Börek[Peynirli;Kıymalı]|b|d9a860,Mantı|b|e8d3a0,Balık fileto|b|a8c0d0,Dondurulmuş meyve[Çilek;Orman;Mango]|p|c04a6a,Dondurulmuş köfte|b|a8473a,Pide|f|e0b068,Hamburger köftesi|b|b5352c,Donmuş pasta[Cheesecake;Tiramisu;Profiterol;Çikolatalı]|b|e8c0d0,Buz|p|bfe8f8"},
+{n:"Şarap & Alkol",kind:"W",h:.93,v:.2,sh:"l",br:"Dolucu,Kavaklı Dere,Efez,Tubor,Yeni Rakkı,Smirnof,Jak Danyıl,Bifiter,Çivas,Hennesi,Meyy,Moyet",items:"Şarap[Kırmızı;Beyaz;Roze;Köpüklü]@2|l|5a1428,Şampanya|l|2a5a3a,Bira[Pilsner;Siyah;Buğday;Alkolsüz]@2|c|c88a1a,Rakı[35 cl;70 cl]|l|d8e4f0,Votka[Klasik;Aromalı]|l|d0e0f0,Viski[Blended;Bourbon]|l|a8601a,Cin|l|b8e0d8,Konyak|l|8a4a1a,Rom|l|6a3a1a,Tekila|l|e8d070,Likör[Kahve;Portakal;Vişne]|l|8a2a2a"},
+{n:"Bakliyat & Makarna",kind:"G",sty:"wood",h:.1,v:.1,sh:"p",br:"Reiss,Bizimm,Dürü,Yaylak,Hacıbekar,Ova Tarla,Köylü Abi",items:"Pirinç[Baldo;Osmancık;Basmati;Jasmine]|p|efe2b4,Bulgur[İnce;Pilavlık;Köftelik]|p|d9a23c,Mercimek[Kırmızı;Yeşil;Siyah]|p|d9712c,Nohut|p|c9a45a,Fasulye[Kuru;Barbunya;Börülce]|p|d8c8a0,Makarna[Spagetti;Burgu;Penne;Fiyonk;Arpa şehriye;Erişte]@2|t|e4572e,Lazanya|t|e8b050,Irmik|p|efe0b0,Yulaf|p|d8c090,Kinoa|p|c8a070"},
+{n:"Un, Şeker & Yağ",kind:"G",h:.13,v:.1,sh:"b",br:"Söke Un,Ofiş,Kristalll,Yudumm,Komilik,Tatt,Dürü,Şekerci Baba",items:"Un[Beyaz;Tam buğday;Mısır]|b|f0e6cc,Toz şeker|b|f4f4f4,Kesme şeker|b|f0f0f0,Tuz[Kaya;İnce]|b|e8f0f8,Nişasta|b|f2f2f2,Pudra şekeri|b|f8f8f8,Karbonat|b|e8f0e8,Kabartma tozu|b|f0c0c0,Ayçiçek yağı[1 L;5 L]@2|l|f0d030,Zeytinyağı[Sızma;Riviera]@2|l|6a8a30,Mısırözü yağı|l|f0c840,Sirke[Elma;Üzüm]|l|a8602a"},
+{n:"Konserve & Sos",kind:"G",h:.03,v:.12,sh:"c",br:"Haynz,Kalve,Tuğkaş,Helmanın,Tamak,Dayı Usta,Turşucu Rıza",items:"Salça[Domates;Biber]|j|d1453b,Domates sosu|j|c83a2a,Ketçap[Klasik;Acı]|l|d02a20,Mayonez|l|f4efd8,Hardal|l|e8c020,Ton balığı[Zeytinyağlı;Sulu]|c|3a6a9a,Sardalya|c|8a9aa8,Mısır konservesi|c|e8c030,Bezelye konservesi|c|4a9a3a,Nohut konservesi|c|c9a45a,Barbunya konservesi|c|b04a3a,Turşu[Karışık;Salatalık;Biber]|j|8ab04a,Hazır çorba[Domates;Mercimek;Tavuk]|b|e08a40,Bulyon|b|e8d060,Pesto|j|4a8a3a,Acı sos|l|c8281a,Dolma yaprağı|j|6a8a3a,Enginar konservesi|c|7a9a5a,Ananas konservesi|c|f0c840"},
+{n:"Baharat",kind:"G",sty:"wood",h:.02,v:.12,sh:"j",br:"Baharatçı Sedat,Kokulu Mahalle,Acı Hanım,Çarşı Baharat",items:"Karabiber|j|3a3a3f,Kimyon|j|9b6b3c,Pul biber|j|c8321f,Nane|j|4f9a47,Kekik|j|6f8f3a,Tarçın[Çubuk;Toz]|j|a8643a,Zencefil|j|c8a040,Zerdeçal|j|e0a010,Köri|j|d8a020,Sumak|j|8a2a3a,Vanilya|j|d8c090,Karanfil|j|5a3a2a,Defne yaprağı|j|5a8a3a,Kırmızı biber[Tatlı;Acı]|j|b8281a,Çemen|j|c8a050,Anason|j|b8a070,Safran|j|d85a10,Susam|j|e0d0a0,Çörek otu|j|3a3a3a,Biberiye|j|4a7a3a,Fesleğen|j|3a8a3a"},
+{n:"Kahvaltılık",kind:"G",sty:"wood",h:.08,v:.15,sh:"j",br:"Balparmağı,Tamak,Nuttella,Koşka,Marmara Birleşik,Çaykır,Lipdon,Nesküfe,Kuru Kahveci Dede,Kelogz,Çiriyos",items:"Bal[Çiçek;Çam;Süzme]|j|e0a020,Reçel[Çilek;Kayısı;Vişne;Gül;İncir]@2|j|b02a4a,Fındık ezmesi[Sütlü;Kakaolu]|j|7a4a2a,Tahin|j|d8c090,Pekmez|j|5a2a1a,Zeytin[Siyah;Yeşil;Gemlik]|j|6b7a2a,Çay[Siyah;Bergamot;Yeşil]@2|b|3a6a3a,Kahve[Türk;Filtre;3’ü 1 arada]|t|5a3a22,Gevrek[Mısır;Çikolatalı;Granola]@2|t|e8a030,Müsli|t|c8a060,Bisküvi kahvaltılık|b|d0a060"},
+{n:"İçecek",kind:"G",h:.58,v:.35,sh:"l",br:"Koka Kola,Pespi,Fanda,Sprayt,Ulubağ,Kepi,Red Bil,Erikkli,Hayyat,Sırmaa,Lipdon Aysti,Çam Suyu",items:"Su[0.5 L;1.5 L;5 L]@2|l|8ac8f0,Maden suyu[Sade;Limonlu]|l|7ab0d0,Kola[Klasik;Zero]@2|c|c8202f,Kola şişe[1 L;2.5 L]|l|6a2a1a,Gazoz|c|8ac04a,Portakallı gazoz|c|f09a30,Meyve suyu[Portakal;Elma;Vişne;Şeftali;Karışık;Nar]@2|m|f08a1c,Limonata|l|f2e060,Soğuk çay[Şeftali;Limon]@2|l|f0a060,Enerji içeceği[Klasik;Şekersiz]|c|2a8ad0,Soda[Sade;Meyveli]|l|a8d8e8,Şalgam|l|a02a6a,Bitki çayı[Papatya;Ihlamur;Nane limon;Kuşburnu]|b|7aa05a,Kakao|t|7a4a2a,Ice latte|c|c8a888,Tonik|c|a8e0e8"},
+{n:"Atıştırmalık",kind:"G",h:.88,v:.4,sh:"p",br:"Layks,Doritoz,Rufıls,Çitos,Ülkırr,Eti Peti,Torkü,Nestlay,Milko,Haribu,Pringıls,Çerezzo,Tadelli,Albenli",items:"Cips[Klasik;Baharatlı;Ketçaplı;Peynirli;Acılı]@2|p|e8b020,Çikolata[Sütlü;Bitter;Fındıklı;Bademli;Karamelli]@2|r|7b4a2e,Gofret[Fındıklı;Çikolatalı]|r|d0a060,Bisküvi[Sade;Kremalı;Parçacıklı;Yulaflı]@2|b|c9803a,Kraker[Peynirli;Tuzlu]|b|d9a05a,Kek[Sade;Muzlu;Çikolatalı]|b|c88a3a,Fıstık[Tuzlu;Çiğ]|p|b8864a,Fındık|p|a8743a,Badem|p|c8a870,Ceviz|p|a88050,Kaju|p|e0c890,Kuru üzüm|p|5a2a3a,Kuru kayısı|p|e8962a,Lokum[Sade;Fıstıklı;Gül]|b|f0c0d0,Sakız[Naneli;Meyveli]|b|7ad0a0,Şeker[Jelibon;Lolipop]|p|e84a9a,Patlamış mısır[Tuzlu;Karamelli]|p|f0d060,Granola bar[Çikolatalı;Meyveli]|r|a8743a,Çekirdek[Ay;Kabak]|p|8a8a60,Helva|b|d8b070"},
+{n:"Temizlik",kind:"G",h:.75,v:.3,sh:"l",br:"Ariyel,Ömo,Pırsil,Ferry,Domestus,Çif,Prill,Bay Kas,Vanuş,Konfor,Selpek,Papya,Hakmarr",items:"Çamaşır deterjanı[Renkliler;Beyazlar;Hassas]@2|t|3a6ad0,Sıvı çamaşır deterjanı|l|4a8ae0,Yumuşatıcı[Lavanta;Bahar]|l|a888d8,Bulaşık deterjanı[Limon;Elma]|l|8ad04a,Bulaşık tableti|b|3ab0d0,Yüzey temizleyici[Çam;Lavanta]|l|4ab070,Çamaşır suyu|l|e8e8f0,Cam temizleyici|l|8ac8f0,Tuvalet kağıdı[8’li;24’lü]@2|o|f4f4f8,Kağıt havlu|o|f0e8d0,Peçete|b|f8f4f0,Çöp poşeti[Küçük;Büyük]|b|2a2a30,Sünger|b|e8d030,Temizlik bezi|b|3ab0d0,Banyo temizleyici|l|3a9ab8,Oda spreyi[Lavanta;Vanilya]|l|c8a0e0,Eldiven|b|e8d030,Leke çıkarıcı|l|e04a6a,Kireç çözücü|l|4a8a4a,Sıvı sabun[Gül;Zeytin]|l|e8a0b8,Mendil[Cep;Kutu]|b|f0f4f8"},
+{n:"Kişisel Bakım",kind:"G",sty:"peg",h:.82,v:.3,sh:"l",br:"Hed & Şoldırs,Elidör,Panten,Dofe,Nivva,Kolgat,Sinyal,Oral-Bi,Jileti,Reksona,Eksi,Hacı Şakar,Evyep,Slipi,Primma",items:"Şampuan[Kepek;Boyalı;Yağlı;Kuru]@2|l|3a8ad0,Saç kremi|l|e8a0c0,Duş jeli[Okyanus;Lavanta]|l|3ab0c8,Sabun[Gliserin;Zeytinyağlı]|b|f0d8c0,Diş macunu[Beyazlatıcı;Hassas]|b|d8e8f8,Diş fırçası[Yumuşak;Orta]|b|3a9ad0,Deodorant[Roll-on;Sprey]|c|8aa8d8,Parfüm|l|c8a0d0,Tıraş köpüğü|c|3a6a9a,Tıraş bıçağı|b|3a8a4a,El kremi|j|f0c0c0,Yüz kremi[Nemlendirici;Güneş]|j|f0e0a0,Hijyenik ped[Normal;Gece]|o|f0b0d0,Islak mendil|b|a0d0e8,Dudak koruyucu|c|e86a8a"},
+{n:"Bebek",kind:"G",h:.95,v:.1,sh:"b",br:"Primma,Slipi,Aptamul,Nutrilen,Hıpp,Çikko,Piyon",items:"Bebek bezi[Boy 3;Boy 4;Boy 5]@2|o|f0c040,Bebek maması[Havuçlu;Elmalı;Muzlu]|j|f0a060,Devam sütü|t|a0c8e8,Biberon|c|c8e4f4,Emzik|b|f0b0c8,Bebek şampuanı|l|f0d890,Bebek yağı|l|f4e8a8,Bebek pudrası|c|f8f0f4,Bebek bisküvisi|b|e8c890"},
+{n:"Evcil Hayvan",kind:"G",h:.05,v:.2,sh:"p",br:"Viskas,Pedigri,Royal Kenin,Feliks,Şeba,Purine",items:"Kedi maması[Tavuklu;Balıklı;Sığır etli]@2|p|e8903a,Köpek maması[Kuzulu;Tavuklu;Sığır etli]|p|8a5a2a,Kedi kumu|p|d8c8a8,Kuş yemi|p|e0c860,Balık yemi|b|4a9ad0,Kedi ödülü|b|e8a8a0,Köpek ödülü|b|b87a4a,Tasma|b|d0402a,Kedi oyuncağı|b|a85ad0,Mama kabı|b|9ab0c0"},
+{n:"Kitap & Dergi",kind:"G",h:.6,v:.95,sh:"f",br:"",items:"-Roman[Kayıp Çorabın Peşinde;Gece Bakkalı;Raflardaki Hayalet;Son Poşet]|f,-Polisiye[Katil Kasada;Cinayet Reyonu;Sarı Etiket]|f,-Bilim|f||2,-Bilim kurgu[Robot Müdür;Raf Boşaltan;Galaktik Market]|f||2,-Fantastik[Ejderha ve Sepet;Büyülü Kasa]|f,-Tarih[Market Tarihi;Bakkal Savaşları]|f,-Biyografi[Bir Kasiyerin Hayatı]|f,-Çocuk masalları[Konuşan Elma;Uçan Simit]|f,-Boyama kitabı|f,-Yemek kitabı[Makarnanın Sırları;Pratik Tavuk]|f,-Kişisel gelişim[Rafı Düzenle Hayatı Düzenle]|f,-Şiir|f,-Sözlük|f,-Atlas|f,-Felsefe[Sepet Neden Boş]|f,-Dergi[Nasyonal Coğrafya;Moda Panik;Teknoloji Dünyam;Bilim ve Bilimsiz;Spor Arena;Yemek Hevesi;Evim Şahane;Otomobil Gürültü;Sinema Kuyruğu;Çocuk Kahkaha]|f,-Bulmaca|f,-Çizgi roman[Süper Kasiyer]|f,-Gazete[Günlük Haber;Spor Gazetesi;Ekonomi Haftası]|f"},
+{n:"Kırtasiye & Oyuncak",kind:"G",sty:"peg",h:.15,v:.6,sh:"b",br:"Legu,Barbıl,Hot Tekerlek,Faber-Kastil,Pırıt,Bik,Stabilu,Uhh,Ravenzburger",items:"Yapı blokları|b|e8402a,Bebek|b|f0a0c8,Oyuncak araba|b|3a8ad0,Yapboz[100;500;1000]|f|4a9a5a,Boya kalemi[12’li;24’lü]|b|e8a020,Kurşun kalem|b|e8c030,Silgi|b|f0f0f0,Defter[Çizgili;Kareli;Spiral]|f|3a6ad0,Dosya|f|8a4ad0,Yapıştırıcı|c|e83a3a,Makas|b|3ab0d0,Oyun kartı|f|c02a2a,Balon|p|e84a9a,Okul çantası|b|2a5aa0,Pastel boya|b|e07a2a,Suluboya|b|3aa0d8,Tükenmez kalem[Mavi;Siyah;Kırmızı]|c|3a5ad0,Cetvel|f|e8d070,Zımba|b|c04a4a,Bant|c|e8e8f0"},
+{n:"Elektronik",kind:"G",sty:"peg",h:.65,v:.3,sh:"b",br:"Filips,Şiaomi,Samsuk,Dürasel,Enerjizır,Logitek,Ankır,Sandıs,Osrem,Kasyo,Basus,CBL,Huvay",items:"Kulaklık[Kablolu;Kablosuz;Oyuncu]|b|2a2a3a,Şarj kablosu[USB-C;Lightning;Micro USB]|b|3a6ad0,Şarj aleti[Hızlı;Araç;Duvar]|b|f0f0f0,Powerbank[10000;20000]|b|2a3a5a,Mouse[Kablolu;Kablosuz;Oyuncu]|b|5a5a6a,Klavye[Kablolu;Kablosuz]|f|3a3a4a,Hafıza kartı[32 GB;64 GB;128 GB]|f|c82a2a,USB bellek[32 GB;64 GB]|f|2a8ad0,Pil[AA;AAA;9V]|b|e8a820,Ampul[LED;Tasarruflu]|b|f8e8a0,Uzatma kablosu|b|f0f0f0,Bluetooth hoparlör|b|2a4a8a,Saat[Dijital;Akıllı]|b|2a2a2a,Telefon kılıfı|f|8a4ad0,Ekran koruyucu|f|a0d8f0,El feneri|b|e8c020,Hesap makinesi|f|3a3a4a,Webcam|b|2a2a2a"}];
+function ex(s){const f=s.split("|"),m=/^(-)?([^\[@]*)(?:\[(.*)\])?(?:@(\d+))?$/.exec(f[0]);const vs=m[3]?m[3].split(";"):[null],cp=+m[4]||1;const out=[];
+  for(let c=0;c<cp;c++)vs.forEach(v=>out.push({nb:!!m[1],base:m[2],v:v,c:c,s:f[1]||null,col:f[2]||null,u:+f[3]||0}));return out}
+const ALL=[];let BID=0;CATS.forEach((c,ci)=>c.items.split(",").forEach(s=>{BID++;ex(s).forEach(t=>{t.cat=ci;t.bid=BID;ALL.push(t)})}));
+const TY=ALL.filter((t,i)=>!t.v||t.base==="Dergi"||hr(i,15)>.25);
+TY.forEach((t,k)=>{const c=CATS[t.cat],br=c.br?c.br.split(","):[];t.k=k;t.s=t.s||c.sh;
+  const brand=(t.nb||!br.length)?"":br[(Math.floor(hr(t.bid,17)*br.length)+t.c)%br.length]+" ";
+  t.n=(brand+t.base+(t.v?" "+t.v:"")).trim();t.brand=brand.trim();t.prod=t.base+(t.v?" "+t.v:"")});
+const TOTP=TY.length;
 
-sc.add(new T.HemisphereLight(0xfff4e0, 0xd1d8df, 0.8));
-const dl = new T.DirectionalLight(0xffffff, 0.5);
-dl.position.set(10, 20, 10);
-dl.castShadow = true;
-dl.shadow.mapSize.width = 1024; dl.shadow.mapSize.height = 1024;
-dl.shadow.camera.left = -20; dl.shadow.camera.right = 20;
-dl.shadow.camera.top = 20; dl.shadow.camera.bottom = -20;
-sc.add(dl);
+/* ---------- BECERİ SİSTEMİ (YENİ) ---------- */
+let stars=8;
+const lv={cap:0,hiz:0,zip:0,mik:0,call:0,shelf:0,sprint:0,auto:0};
+const bar=[],cd={},act={};
+const act_=(n,e,du,cdf,tx)=>({n,e,max:5,act:1,du,cd:cdf,d:l=>l?tx(l)+" · bekleme "+cdf(l)+"sn":"Kilitli"});
+const SK={
+    cap:{n:"Kapasite",e:"🎒",max:3,cost:l=>4+4*l,d:l=>"Taşıma: "+(5+2*l)},
+    hiz:{n:"Hız",e:"🏃",max:1,cost:()=>8,d:()=>"Yürüme hızı +%50"},
+    zip:{n:"Zıplama",e:"🦘",max:1,cost:()=>7,d:()=>"Zıplama açılır"},
+    mik:{n:"Mıknatıs",e:"🧲",max:1,cost:()=>6,d:()=>"Alma menzili +%50"},
+    call:act_("Ürünleri Çağır","✨",null,l=>15-2*l,l=>(3+l)+" ürünü yanına çağır"),
+    shelf:act_("Rafı Göster","📍",l=>5+3*l,l=>15-2*l,l=>(5+3*l)+"sn raf işareti"),
+    sprint:act_("Hızlı Koş","⚡",l=>3+l,l=>24-2*l,l=>(3+l)+"sn hızlı koşu"),
+    auto:act_("Oto-Diz","📥",l=>2+l,l=>24-2*l,l=>(2+l)+"sn otomatik dizme")
+};
+const cap=()=>5+2*lv.cap,cost=id=>SK[id].cost?SK[id].cost(lv[id]):3+2*lv[id];
 
-// --- SES SİSTEMİ ---
-let AC;
-function sfx(f,d=.08){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type="triangle";o.frequency.value=f;g.gain.setValueAtTime(.05,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(t+d)}catch(e){}}
+function refreshSkills(){
+  $("st").textContent="⭐ "+stars;
+  $("treeStars").textContent=stars;
+  $("tl").innerHTML="";
+  for(const id in SK){
+    const s=SK[id],l=lv[id],mx=l>=s.max,c=cost(id);
+    const r=document.createElement("div");r.className="row";
+    r.innerHTML='<span class="ic">'+s.e+"</span><div><b>"+s.n+"</b> Sv "+l+"/"+s.max+"<br><small>"+s.d(l)+(mx?"":" → "+s.d(l+1))+"</small></div>";
+    const b=document.createElement("button");b.textContent=mx?"MAX":"⭐ "+c;b.disabled=mx||stars<c;
+    b.onclick=()=>{stars-=c;lv[id]++;if(s.act&&lv[id]===1)bar.push(id);refreshSkills();buildBar();refreshHUD();sfx(800,.15)};
+    r.append(b);$("tl").append(r);
+  }
+  buildBar();
+}
+function buildBar(){
+  $("bar").innerHTML="";bar.forEach((id,n)=>{const d=document.createElement("div");d.className="sl";d.id="sl"+id;d.innerHTML="<b>"+(n+1)+"</b><i>"+SK[id].e+"</i><small>"+SK[id].n+" "+lv[id]+"</small><u hidden></u>";d.onclick=()=>useSkill(id);$("bar").append(d)});
+}
+function refreshHUD(){
+  $("bag").innerHTML="<b>Sepet "+carry.length+"/"+cap()+"</b>";
+  bar.forEach(id=>{const d=$("sl"+id);if(!d)return;const r=(cd[id]||0)-tm,u=d.querySelector("u");u.hidden=r<=0;if(r>0)u.textContent=Math.ceil(r);d.classList.toggle("on",tm<(act[id]||0));});
+}
+function useSkill(id){
+  const L=lv[id];if(!L||tm<(cd[id]||0)||!locked)return;
+  if(id==="sprint"){act.sprint=tm+3+L;}
+  else{
+    if(selK<0){toast("Önce elinde bir ürün olmalı");return}
+    if(id==="call"){
+      const free=cap()-carry.length-fly.length;if(free<=0){toast("Sepet dolu");return}
+      const ids=nearest(selK,Math.min(3+L,free));if(!ids.length){toast("Yerde başka yok!");return}
+      ids.forEach((i,n)=>startFly(selK,i,.6+n*.12,1));sfx(300,.4);
+    }else if(id==="auto"){
+      act.auto=tm+(2+L);toast("Oto-Diz Aktif!");
+    }else act[id]=tm+SK[id].du(L);
+  }
+  cd[id]=tm+SK[id].cd(L);sfx(740,.15);
+}
 
-// --- DEĞİŞKENLER & KONTROLLER ---
-const P = { x: 0, y: 0, z: 0, vy: 0 };
-const yaw = [Math.PI, 0];
-const K = {}, jv = { x: 0, y: 0 };
-let locked = false;
+/* ---------- BECERİ BİTİŞ ---------- */
 
-document.addEventListener("mousemove", e => {
-    if(document.pointerLockElement === document.getElementById("c")) {
-        yaw[0] -= e.movementX * 0.002;
-        yaw[1] = Math.max(-1.45, Math.min(1.45, yaw[1] - e.movementY * 0.002));
-    }
+const tex2=(w,h,fn)=>{const c=document.createElement("canvas");c.width=w;c.height=h;fn(c.getContext("2d"));return new T.CanvasTexture(c)};
+const hr2=(i,n)=>{const x=Math.sin(i*12.9898+n*78.233)*43758.5453;return x-Math.floor(x)};
+const COL=[];
+[[0,-6.7],[-12.6,.8],[12.6,.8]].forEach(([x,z])=>{box(.8,4.3,.8,x,2.15,z,LM(0xcfd3d8));box(.82,1.2,.82,x,.6,z,LM(0x3d4650));COL.push({x,z,hw:.4,hd:.4,cat:"Kolon"})});
+const RLX=15,RZ=8.5;
+const box=(w,h,d,x,y,z,m)=>{const b=new T.Mesh(new T.BoxGeometry(w,h,d),m);b.position.set(x,y,z);sc.add(b);return b};
+const LM=c=>new T.MeshLambertMaterial({color:c}),MW=LM(0xe8e0d2),MN=LM(0x2c3e5c),MG=LM(0x8d96a1),MC=LM(0xd9534f);
+const ft2=tex2(128,128,g=>{g.fillStyle="#aab0b8";g.fillRect(0,0,128,128);g.fillStyle="#9ea5ae";g.fillRect(0,0,64,64);g.fillRect(64,64,64,64);g.strokeStyle="#848b95";g.lineWidth=3;g.strokeRect(0,0,128,128)});ft2.wrapS=ft2.wrapT=T.RepeatWrapping;ft2.repeat.set(RLX*2/1.6,RZ*2/1.6);
+const fm=new T.Mesh(new T.PlaneGeometry(RLX*2,RZ*2),new T.MeshLambertMaterial({map:ft2}));fm.rotation.x=-PI/2;sc.add(fm);
+
+// Raflar
+const S_=(key,w,h,d,p,ry)=>{so.position.set(p[0],p[1],p[2]);so.rotation.set(0,ry,0);so.scale.set(w,h,d);so.updateMatrix();LS[key].push(so.matrix.clone())};
+const so=new T.Object3D();
+const bw=(b,lx,y,lz)=>[b.x+lx*Math.cos(b.ry)+lz*Math.sin(b.ry),y,b.z-lx*Math.sin(b.ry)+lz*Math.cos(b.ry)];
+const GL=[];
+const MT={},LS={};
+const reg=(k,c,basic)=>{MT[k]=basic?new T.MeshBasicMaterial({color:c}):LM(c);LS[k]=[]};
+CATS.forEach((c,ci)=>reg("h"+ci,new T.Color(c.col)));
+const pegT=tex2(32,32,c=>{c.fillStyle="#3a3f47";c.fillRect(0,0,32,32);c.fillStyle="#5a606a";c.beginPath();c.arc(8,8,2.4,0,7);c.fill();c.beginPath();c.arc(24,24,2.4,0,7);c.fill()});pegT.wrapS=pegT.wrapT=T.RepeatWrapping;pegT.repeat.set(6,12);
+reg("gb",0xdfe3e6);reg("gk",0xf0f2f3);reg("gp",0x6b727a);reg("wb",0xb98a58);reg("wk",0xd9bd8f);reg("wp",0x8a5a33);reg("wh",0x6b4423);reg("pb",0xc9ced3);reg("pp",0x20242a);reg("ph",0x2b2f36);reg("pk",0x3a3f47);MT.pk=new T.MeshLambertMaterial({map:pegT});
+reg("kd",0x2c343c);reg("kfr",0xf3f6f8);reg("kbk",0xeaf5fb,true);reg("ksh",0xcfd6dc);reg("kcn",0x1f78c8);reg("kdr",0xdfe6ea);reg("chr",0xd5dbe0);reg("led",0xf4fbff,true);
+reg("md",0x39424b);reg("mfr",0x9aa4ad);reg("mbk",0x2a3945);reg("mcn",0xc0392b);reg("msh",0xc8ced4);
+reg("zb",0xe4f1f9);reg("zbk",0xf2fafe,true);reg("zcn",0x2fb4e0);reg("zdr",0x8fa9bb);reg("zled",0xff3b30,true);
+reg("wd",0x8a5a33);reg("wdk",0x4a2e1c);reg("whd",0x7a1e3a);
+reg("cw",0xc99a5b);reg("cb",0xe0b070);reg("tb",0x8a5a3a);reg("tw",0xa8794a);reg("tl",0x4a4f55);
+
+// BAYS (Market Rafları)
+const PI=Math.PI;const BL=[];let RUN=0;
+const run=(n,kind,fn)=>{for(let i=0;i<n;i++){const b=fn(i);b.run=RUN;b.kind=kind;BL.push(b)}RUN++};
+[-6.6,6.6].forEach(cx=>[1,-1].forEach(sd=>run(6,"G",j=>({x:cx-3+1.2*j,z:-4.85+sd*.24,ry:sd>0?0:PI,isl:cx+"_A"}))));
+[-6.6,6.6].forEach(cx=>[1,-1].forEach(sd=>run(5,"G",j=>({x:cx-2.4+1.2*j,z:-1.2+sd*.24,ry:sd>0?0:PI,isl:cx+"_B"}))));
+run(3,"M",i=>({x:-13.8+1.2*i,z:-8.275,ry:0}));
+run(7,"K",i=>({x:-10.2+1.2*i,z:-8.275,ry:0}));
+run(4,"W",i=>({x:-1.8+1.2*i,z:-8.275,ry:0}));
+run(8,"G",i=>({x:3+1.2*i,z:-8.275,ry:0}));
+run(6,"G",i=>({x:-9.6+1.2*i,z:8.275,ry:PI}));
+run(3,"G",i=>({x:-14.775,z:-7.2+1.2*i,ry:PI/2}));
+run(5,"B",i=>({x:-14.55,z:-3+1.2*i,ry:PI/2}));
+run(6,"Z",i=>({x:14.775,z:-7.2+1.2*i,ry:-PI/2}));
+run(4,"G",i=>({x:14.775,z:0+1.2*i,ry:-PI/2}));
+[-10.2,-4.2].forEach(cx=>[1,-1].forEach(sd=>run(4,"P",j=>({x:cx-1.8+1.2*j,z:2.6+sd*.46,ry:sd>0?0:PI,isl:cx+"_P"}))));
+
+const BAYS=BL;
+BAYS.forEach((b,bi)=>{if(b.cat===undefined)return;const c=b.cat,K=b.kind,sw=Math.abs(Math.sin(b.ry))>.5;
+  if(K==="P"||K==="B"){const cwk=K==="B"?"cb":"cw",twk=K==="B"?"tb":"tw";
+    S_(twk,1.2,.05,.92,bw(b,0,.5,0),b.ry);S_(twk,1.2,.28,.45,bw(b,0,.66,-.23),b.ry);
+    [-.55,.55].forEach(lx=>[-.4,.4].forEach(lz=>S_("tl",.06,.5,.06,bw(b,lx,.25,lz),b.ry)));
+    [0,1].forEach(L=>[-.3,.3].forEach(lx=>{const lz=L?-.23:.23,by=L?.8:.53;
+      S_(cwk,.56,.03,.42,bw(b,lx,by+.015,lz),b.ry);S_(cwk,.56,.17,.025,bw(b,lx,by+.1,lz+.21),b.ry);S_(cwk,.56,.17,.025,bw(b,lx,by+.1,lz-.21),b.ry);
+      S_(cwk,.025,.17,.42,bw(b,lx-.28,by+.1,lz),b.ry);S_(cwk,.025,.17,.42,bw(b,lx+.28,by+.1,lz),b.ry)}));
+    COL.push({x:b.x,z:b.z,hw:sw?.46:.6,hd:sw?.6:.46,cat:CATS[c].n});return}
+  const nx=BAYS[bi+1],lastB=!nx||nx.run!==b.run||nx.cat===undefined;let hd=.23;
+  if(K==="K"||K==="Z"){const Z=K==="Z",bd=Z?"zb":"kfr",cn=Z?"zcn":"kcn",bk=Z?"zbk":"kbk";hd=.32;
+    S_("kd",1.2,.16,.52,bw(b,0,.08,.04),b.ry);
+    S_(bd,.04,2.2,.5,bw(b,-.58,1.1,.02),b.ry);if(lastB)S_(bd,.04,2.2,.5,bw(b,.58,1.1,.02),b.ry);
+    S_(bk,1.12,2.1,.03,bw(b,0,1.12,-.225),b.ry);
+    for(let l=0;l<5;l++){S_("ksh",1.12,.04,.44,bw(b,0,.28+l*.42,0),b.ry);S_("ksh",1.12,.12,.02,bw(b,0,.235+l*.42,.225),b.ry)}
+    S_(cn,1.2,.26,.56,bw(b,0,2.3,.04),b.ry);S_(bd,1.2,.05,.54,bw(b,0,2.14,.03),b.ry);S_("led",1.0,.02,.04,bw(b,0,2.11,.26),b.ry);
+    S_("kdr",.05,2.1,.04,bw(b,-.57,1.1,.27),b.ry);S_("kdr",.05,2.1,.04,bw(b,.57,1.1,.27),b.ry);S_("kdr",1.12,.06,.04,bw(b,0,2.08,.27),b.ry);S_("kdr",1.12,.1,.04,bw(b,0,.2,.27),b.ry);
+    S_("chr",.03,.8,.03,bw(b,.46,1.1,.31),b.ry);GL.push([bw(b,0,1.14,.275),b.ry,Z?1:0]);if(Z)S_("zled",.1,.04,.02,bw(b,.4,2.3,.33),b.ry)}
+  else if(K==="M"){hd=.34;
+    S_("md",1.2,.3,.56,bw(b,0,.15,.06),b.ry);S_("msh",1.1,.12,.02,bw(b,0,.2,.35),b.ry);
+    S_("mfr",.05,2.15,.58,bw(b,-.575,1.075,.05),b.ry);if(lastB)S_("mfr",.05,2.15,.58,bw(b,.575,1.075,.05),b.ry);
+    S_("mbk",1.1,1.95,.03,bw(b,0,1.17,-.235),b.ry);
+    for(let l=0;l<5;l++){S_("msh",1.1,.04,.46,bw(b,0,.28+l*.42,0),b.ry);S_("msh",1.1,.12,.02,bw(b,0,.235+l*.42,.235),b.ry)}
+    S_("mcn",1.2,.3,.62,bw(b,0,2.3,.07),b.ry);S_("led",1.0,.02,.05,bw(b,0,2.14,.3),b.ry)}
+  else if(K==="W"){
+    for(let l=0;l<5;l++)S_("wd",1.15,.1,.45,bw(b,0,.25+l*.42,0),b.ry);
+    S_("wdk",1.2,2.2,.03,bw(b,0,1.1,-.225),b.ry);
+    S_("wd",.06,2.2,.47,bw(b,-.6,1.1,.005),b.ry);if(lastB)S_("wd",.06,2.2,.47,bw(b,.6,1.1,.005),b.ry);
+    for(let l=0;l<5;l++)S_("wd",.04,.34,.43,bw(b,0,.47+l*.42,-.005),b.ry);
+    S_("whd",1.2,.18,.47,bw(b,0,2.3,.005),b.ry)}
+  else{const sty=CATS[c].sty||"steel",st={steel:["gb","gk","gp","h"+c],wood:["wb","wk","wp","wh"],peg:["pb","pk","pp","ph"]}[sty],th=sty==="peg"?.06:.13;
+    for(let l=0;l<5;l++)S_(st[0],1.15,th,.45,bw(b,0,.3-th/2+l*.42,0),b.ry);
+    S_(st[1],1.2,2.2,.03,bw(b,0,1.1,-.225),b.ry);
+    S_(st[2],.05,2.2,.47,bw(b,-.6,1.1,.005),b.ry);if(lastB)S_(st[2],.05,2.2,.47,bw(b,.6,1.1,.005),b.ry);
+    S_(st[3],1.2,.16,.47,bw(b,0,2.3,.005),b.ry);if(sty!=="steel")S_("h"+c,1.0,.06,.02,bw(b,0,2.3,.245),b.ry)}
+  COL.push({x:b.x,z:b.z,hw:sw?hd:.6,hd:sw?.6:hd,cat:CATS[c].n});
 });
-document.addEventListener("keydown", e => K[e.key.toLowerCase()] = 1);
-document.addEventListener("keyup", e => K[e.key.toLowerCase()] = 0);
+const ub=new T.BoxGeometry(1,1,1);
+for(const key in LS){if(!LS[key].length)continue;const m=new T.InstancedMesh(ub,MT[key],LS[key].length);LS[key].forEach((mt,i)=>m.setMatrixAt(i,mt));sc.add(m)}
 
-const joy = document.getElementById("joy"), knob = document.getElementById("knob");
-let jp = null;
-function jm(e) { const r = joy.getBoundingClientRect(), dx = e.clientX - r.left - r.width/2, dy = e.clientY - r.top - r.height/2, m = Math.min(1, Math.hypot(dx, dy)/45), a = Math.atan2(dy, dx); jv.x = Math.cos(a) * m; jv.y = -Math.sin(a) * m; knob.style.transform = `translate(${Math.cos(a)*m*35}px, ${Math.sin(a)*m*35}px)`; }
-if(touch) {
-    joy.addEventListener("pointerdown", e => { jp = e.pointerId; joy.setPointerCapture(jp); jm(e); });
-    joy.addEventListener("pointermove", e => { if(e.pointerId === jp) jm(e); });
-    joy.addEventListener("pointerup", () => { jp = null; jv.x = jv.y = 0; knob.style.transform = ""; });
-    const cvs = document.getElementById("c"); let lk = new Map();
-    cvs.addEventListener("pointerdown", e => { if(locked) lk.set(e.pointerId, [e.clientX, e.clientY]); });
-    cvs.addEventListener("pointermove", e => { const p = lk.get(e.pointerId); if(!p) return; yaw[0] -= (e.clientX - p[0]) * 0.004; yaw[1] = Math.max(-1.45, Math.min(1.45, yaw[1] - (e.clientY - p[1]) * 0.004)); p[0] = e.clientX; p[1] = e.clientY; });
-    ["pointerup", "pointercancel"].forEach(t => addEventListener(t, e => lk.delete(e.pointerId)));
+// Kapılar ve Kasalar
+const RLX2=15,RZ2=8.5;
+const doors=new T.Mesh(new T.BoxGeometry(3,3,.2),new T.MeshBasicMaterial({color:0x339af0,transparent:true,opacity:0.3}));doors.position.set(0,1.5,RZ2);sc.add(doors);
+const k1=new T.Mesh(new T.BoxGeometry(2,1,1),LM(0xe2e8f0));k1.position.set(-5,.5,RZ2-1.5);sc.add(k1);
+const k2=new T.Mesh(new T.BoxGeometry(2,1,1),LM(0xe2e8f0));k2.position.set(-5,.5,RZ2-3);sc.add(k2);
+COL.push({x:-5,z:RZ2-1.5,hw:1,hd:.5,cat:"Kasa"});
+COL.push({x:-5,z:RZ2-3,hw:1,hd:.5,cat:"Kasa"});
+
+// Ürün Modelleri ve Dokuları
+const IM={};
+TY.forEach(t=>{
+  let g;
+  if(t.s==="p"||t.s==="b"||t.s==="r"||t.s==="g"||t.s==="t")g=new T.BoxGeometry(.3,.35,.15);
+  else if(t.s==="c"||t.s==="l")g=new T.CylinderGeometry(.15,.15,.45,16);
+  else if(t.s==="j"||t.s==="y")g=new T.CylinderGeometry(.15,.1,.2,16);
+  else if(t.s==="a"||t.s==="q"||t.s==="S")g=new T.SphereGeometry(.15,16,16);
+  else g=new T.BoxGeometry(.25,.25,.25);
+  
+  const cv=document.createElement("canvas");cv.width=cv.height=128;
+  const ctx=cv.getContext("2d");
+  ctx.fillStyle=t.c;ctx.fillRect(0,0,128,128);
+  ctx.fillStyle="rgba(255,255,255,.2)";ctx.fillRect(0,0,128,40);
+  ctx.fillStyle="#000";ctx.font="bold 20px sans-serif";ctx.textAlign="center";
+  ctx.fillText(t.prod.substring(0,8),64,70);
+  ctx.fillStyle="#fff";ctx.font="bold 12px sans-serif";ctx.fillText(t.brand||"",64,95);
+  const tex=new T.CanvasTexture(cv);
+  const m=new T.MeshLambertMaterial({map:tex});
+  const mesh=new T.Mesh(g,m);
+  mesh.castShadow=true;mesh.receiveShadow=true;
+  IM[t.k]=mesh;
+});
+
+// Yerdeki Ürünler
+const floorItems=[];
+const inventory=[];
+let selK=-1;
+function updateHandModel(){
+  if(handMesh)cam.remove(handMesh);
+  if(inventory.length>0){
+    const item=TY[inventory[inventory.length-1][0]];
+    handMesh=IM[item.k].clone();
+    handMesh.scale.set(.8,.8,.8);
+    handMesh.position.set(.4,-.3,-.6);
+    handMesh.rotation.set(.2,-.5,.1);
+    cam.add(handMesh);
+  }
 }
-addEventListener("resize", () => { R.setSize(innerWidth, innerHeight); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); });
+let handMesh=null;
 
-// --- MARKET HARİTASI VE RAFLAR ---
-const RX = 16, RZ = 10, COL = [];
-const floorTex = (() => { const c = document.createElement("canvas"); c.width = c.height = 128; const g = c.getContext("2d"); g.fillStyle = "#fdfbf7"; g.fillRect(0,0,128,128); g.fillStyle = "#e8e4db"; g.fillRect(0,0,64,64); g.fillRect(64,64,64,64); g.strokeStyle = "#d1cbbf"; g.lineWidth = 2; g.strokeRect(0,0,128,128); const tex = new T.CanvasTexture(c); tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.repeat.set(RX, RZ); return tex; })();
-const floor = new T.Mesh(new T.PlaneGeometry(RX*2, RZ*2), new T.MeshLambertMaterial({map: floorTex}));
-floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; sc.add(floor);
+function spawnFloorItems(){
+  floorItems.forEach(m=>sc.remove(m));
+  floorItems.length=0;
+  for(let i=0;i<120;i++){
+    const item=TY[Math.floor(Math.random()*TY.length)];
+    let x,z,valid;
+    do{
+      valid=true;
+      x=(Math.random()*2-1)*(RLX-2);
+      z=(Math.random()*2-1)*(RZ-2);
+      for(let c of COL){
+        if(Math.abs(x-c.x)<c.hw+.5&&Math.abs(z-c.z)<c.hd+.5){valid=false;break;}
+      }
+      if(Math.abs(x)<3&&Math.abs(z)>RZ-3)valid=false;
+    }while(!valid);
+    
+    const mesh=IM[item.k].clone();
+    mesh.position.set(x,.2,z);
+    mesh.rotation.y=Math.random()*Math.PI*2;
+    mesh.userData={item,id:i};
+    sc.add(mesh);
+    floorItems.push(mesh);
+  }
+}
 
-const wallMat = new T.MeshLambertMaterial({color: 0xf0ebe1});
-sc.add(new T.Mesh(new T.BoxGeometry(RX*2, 3.5, 0.5), wallMat)).position.set(0, 1.75, -RZ - 0.25);
-sc.add(new T.Mesh(new T.BoxGeometry(0.5, 3.5, RZ*2), wallMat)).position.set(-RX - 0.25, 1.75, 0);
-sc.add(new T.Mesh(new T.BoxGeometry(0.5, 3.5, RZ*2), wallMat)).position.set(RX + 0.25, 1.75, 0);
+// Etkileşim (Nişangah)
+const raycaster=new T.Raycaster();
+const centerScreen=new T.Vector2(0,0);
+let currentTarget=null;
+const crosshair=$("cross");
+const hint=$("hint");
 
-function createShelf(x, z, ry, catName, color) {
-    const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry;
-    const frameMat = new T.MeshLambertMaterial({color: 0xdfe3e6});
-    const f1 = new T.Mesh(new T.BoxGeometry(2.4, 2.4, 0.1), frameMat); f1.position.set(0, 1.2, -0.25); g.add(f1);
-    const topMat = new T.MeshLambertMaterial({color: color});
-    for(let i=0; i<3; i++) {
-        const b = new T.Mesh(new T.BoxGeometry(2.4, 0.05, 0.4), topMat); b.position.set(0, 0.5 + i*0.8, 0); g.add(b);
+function updateInteraction(){
+  if(!locked)return;
+  raycaster.setFromCamera(centerScreen,cam);
+  const intersects=raycaster.intersectObjects(floorItems);
+  
+  if(intersects.length>0&&intersects[0].distance<(lv.mik?5.5:4.0)){
+    currentTarget=intersects[0].object;
+    crosshair.style.borderColor="var(--warn)";
+    hint.textContent=currentTarget.userData.item.n+" (Al)";
+    hint.style.opacity=1;
+    currentTarget.material.emissive=new T.Color(0x333333);
+  }else{
+    if(currentTarget)currentTarget.material.emissive=new T.Color(0x000000);
+    currentTarget=null;
+    crosshair.style.borderColor="#fff";
+    hint.style.opacity=0;
+  }
+}
+
+function pickItem(){
+  if(!currentTarget)return;
+  if(inventory.length>=cap()){showToast("Sepet dolu!");return;}
+  inventory.push([currentTarget.userData.item.k,currentTarget.userData.id]);
+  currentTarget.visible=false;
+  updateHandModel();
+  refreshHUD();
+  sfx(520,.05);
+}
+
+function showToast(msg){
+  const t=$("toast");
+  t.textContent=msg;
+  t.style.opacity=1;
+  setTimeout(()=>t.style.opacity=0,1500);
+}
+
+// Dizme
+const placedItems=[];
+function placeItem(){
+  if(inventory.length===0)return;
+  const itemId=inventory.pop()[0];
+  const item=TY[itemId];
+  
+  const dir=new T.Vector3();cam.getWorldDirection(dir);
+  const px=P.x+dir.x*2,pz=P.z+dir.z*2;
+  let nearShelf=null;
+  for(let c of COL){
+    if(Math.abs(px-c.x)<2&&Math.abs(pz-c.z)<2){nearShelf=c;break;}
+  }
+  
+  const mesh=IM[item.k].clone();
+  
+  if(nearShelf){
+    mesh.position.set(nearShelf.x,.6+(Math.random()*0.4),nearShelf.z);
+    if(nearShelf.cat!==CATS[item.cat].n){
+      mesh.material.color.setHex(0xff0000);
+      showToast("Yanlış Raf!");
+    }else{
+      showToast("Doğru Raf +1 Yıldız");
+      stars++;refreshSkills();
+      mesh.material.color.setHex(item.c);
     }
-    g.traverse(m => { if(m.isMesh) { m.castShadow = true; m.receiveShadow = true; } });
-    sc.add(g);
-    COL.push({x, z, hw: ry === 0 || ry === Math.PI ? 1.2 : 0.25, hd: ry === 0 || ry === Math.PI ? 0.25 : 1.2, cat: catName});
+    placedItems.push(mesh);
+  }else{
+    mesh.position.set(px,.2,pz);
+    floorItems.push(mesh);
+  }
+  sc.add(mesh);
+  updateHandModel();
+  refreshHUD();
+  sfx(660,.05);
 }
-createShelf(-RX + 1.3, -6, Math.PI/2, "Manav & Sebze", 0x51cf66);
-createShelf(-RX + 1.3, -3, Math.PI/2, "Fırın", 0xf59f00);
-createShelf(-RX + 1.3, 0, Math.PI/2, "Atıştırmalık", 0xfcc419);
-createShelf(RX - 1.3, -6, -Math.PI/2, "Süt & Peynir", 0x339af0);
-createShelf(RX - 1.3, -3, -Math.PI/2, "Et & Şarküteri", 0xff6b6b);
-createShelf(RX - 1.3, 0, -Math.PI/2, "İçecekler", 0xcc5de8);
-createShelf(-4, -2, 0, "Temizlik", 0x20c997);
-createShelf(-4, 2, 0, "Kırtasiye", 0xfd7e14);
-createShelf(4, -2, 0, "Atıştırmalık", 0xfcc419);
-createShelf(4, 2, 0, "İçecekler", 0xcc5de8);
-createShelf(-2, -RZ + 1.3, Math.PI, "Süt & Peynir", 0x339af0);
-createShelf(2, -RZ + 1.3, Math.PI, "Et & Şarküteri", 0xff6b6b);
 
-const entrance = new T.Mesh(new T.BoxGeometry(3, 3, 0.2), new T.MeshBasicMaterial({color: 0x339af0, transparent:true, opacity:0.3}));
-entrance.position.set(0, 1.5, RZ); sc.add(entrance);
-const barrier = new T.Mesh(new T.BoxGeometry(3, 0.8, 1), new T.MeshLambertMaterial({color: 0xc99a5b}));
-barrier.position.set(0, 0.4, 0); barrier.castShadow = true; sc.add(barrier);
-COL.push({x: 0, z: 0, hw: 1.5, hd: 0.5, cat: "Engel"});
+// Kontroller ve Oyun Döngüsü
+const P={x:0,y:0,z:RZ2-1.5,vy:0};
+const yaw=[Math.PI,0];
+const K={},jv={x:0,y:0};
+let locked=false;
 
-// --- ÜRÜN SİSTEMİ VE DOKULAR ---
-const ITEMS = [
-    {n: "Koka Kola", k: "İçecekler", col: "#d71920", shape: "can", brand: "Koka Kola"},
-    {n: "Pespi", k: "İçecekler", col: "#0a56b5", shape: "can", brand: "Pespi"},
-    {n: "Su", k: "İçecekler", col: "#8ac8f0", shape: "bottle", brand: "Sırmaa"},
-    {n: "Layks", k: "Atıştırmalık", col: "#f6c800", shape: "bag", brand: "Layks"},
-    {n: "Doritoz", k: "Atıştırmalık", col: "#d71920", shape: "bag", brand: "Doritoz"},
-    {n: "Çikolata", k: "Atıştırmalık", col: "#7b4a2e", shape: "bar", brand: "Milko"},
-    {n: "Süt", k: "Süt & Peynir", col: "#e6f2ff", shape: "box", brand: "Sütkaş"},
-    {n: "Yoğurt", k: "Süt & Peynir", col: "#f4f1e6", shape: "cup", brand: "Pınır"},
-    {n: "Kaşar", k: "Süt & Peynir", col: "#f2cf6a", shape: "box", brand: "Pınır"},
-    {n: "Elma", k: "Manav & Sebze", col: "#d62f3b", shape: "sphere", brand: ""},
-    {n: "Muz", k: "Manav & Sebze", col: "#f2cf3a", shape: "sphere", brand: ""},
-    {n: "Domates", k: "Manav & Sebze", col: "#e03a2b", shape: "sphere", brand: ""},
-    {n: "Ekmek", k: "Fırın", col: "#d9a05a", shape: "bread", brand: "Fırıncı"},
-    {n: "Simit", k: "Fırın", col: "#c98a3a", shape: "torus", brand: "Simitçi"},
-    {n: "Çamaşır Suyu", k: "Temizlik", col: "#e8e8f0", shape: "bottle", brand: "Domestus"},
-    {n: "Bulaşık Det.", k: "Temizlik", col: "#8ad04a", shape: "bottle", brand: "Ferry"}
-];
+document.addEventListener("mousemove",e=>{
+  if(document.pointerLockElement===$("c")){
+    yaw[0]-=e.movementX*.002;
+    yaw[1]=Math.max(-1.45,Math.min(1.45,yaw[1]-e.movementY*.002));
+  }
+});
+document.addEventListener("keydown",e=>K[e.key.toLowerCase()]=1);
+document.addEventListener("keyup",e=>K[e.key.toLowerCase()]=0);
 
-// Atlas Dokusu Oluşturma
-function createAtlas() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512; canvas.height = 512;
-    const ctx = canvas.getContext('2d');
-    ITEMS.forEach((item, index) => {
-        const col = index % 4, row = Math.floor(index / 4);
-        const x = col * 128, y = row * 128, s = 128;
-        ctx.fillStyle = item.col; ctx.fillRect(x, y, s, s);
-        ctx.fillStyle = "rgba(255,255,255,0.2)"; ctx.fillRect(x, y, s, s*0.3);
-        ctx.fillStyle = "#fff"; ctx.font = "bold 20px sans-serif"; ctx.textAlign = "center";
-        ctx.fillText(item.brand || item.n, x+s/2, y+s*0.4);
-        ctx.font = "bold 14px sans-serif"; ctx.fillStyle = "#000";
-        ctx.fillText(item.n, x+s/2, y+s*0.6);
-        item.uv = [col/4, 1 - (row+1)/4, 1/4, 1/4];
-    });
-    return new T.CanvasTexture(canvas);
+const joy=$("joy"),knob=$("knob");
+let jp=null;
+function jm(e){
+  const r=joy.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,m=Math.min(1,Math.hypot(dx,dy)/45),a=Math.atan2(dy,dx);
+  jv.x=Math.cos(a)*m;jv.y=-Math.sin(a)*m;
+  knob.style.transform=`translate(${Math.cos(a)*m*35}px,${Math.sin(a)*m*35}px)`;
 }
-const atlasTex = createAtlas();
+if(touch){
+  joy.addEventListener("pointerdown",e=>{jp=e.pointerId;joy.setPointerCapture(jp);jm(e)});
+  joy.addEventListener("pointermove",e=>{if(e.pointerId===jp)jm(e)});
+  joy.addEventListener("pointerup",()=>{jp=null;jv.x=jv.y=0;knob.style.transform=""});
+  const cvs=$("c");let lk=new Map();
+  cvs.addEventListener("pointerdown",e=>{if(locked)lk.set(e.pointerId,[e.clientX,e.clientY])});
+  cvs.addEventListener("pointermove",e=>{const p=lk.get(e.pointerId);if(!p)return;yaw[0]-=(e.clientX-p[0])*.004;yaw[1]=Math.max(-1.45,Math.min(1.45,yaw[1]-(e.clientY-p[1])*.004));p[0]=e.clientX;p[1]=e.clientY});
+  ["pointerup","pointercancel"].forEach(t=>addEventListener(t,e=>lk.delete(e.pointerId)));
+}
+addEventListener("resize",()=>{R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()});
 
-function getItemMesh(item, scale = 1) {
-    let g;
-    if(item.shape === "can") g = new T.CylinderGeometry(0.15, 0.15, 0.4, 12);
-    else if(item.shape === "bottle") g = new T.CylinderGeometry(0.12, 0.15, 0.5, 12);
-    else if(item.shape === "box") g = new T.BoxGeometry(0.3, 0.4, 0.3);
-    else if(item.shape === "bag") g = new T.BoxGeometry(0.4, 0.5, 0.1);
-    else if(item.shape === "bar") g = new T.BoxGeometry(0.3, 0.1, 0.15);
-    else if(item.shape === "cup") g = new T.CylinderGeometry(0.15, 0.1, 0.2, 12);
-    else if(item.shape === "sphere") g = new T.SphereGeometry(0.2, 16, 16);
-    else if(item.shape === "bread") g = new T.BoxGeometry(0.3, 0.2, 0.5);
-    else if(item.shape === "torus") g = new T.TorusGeometry(0.2, 0.08, 8, 16);
-    else g = new T.BoxGeometry(0.3, 0.3, 0.3);
+const hold=(id,fn)=>{const b=$(id);b.addEventListener("pointerdown",e=>{e.preventDefault();fn(1)});["pointerup","pointercancel","pointerleave"].forEach(t=>b.addEventListener(t,()=>fn(0)))};
+const tap=(id,fn)=>$(id).addEventListener("pointerdown",e=>{e.preventDefault();fn()});
+hold("bPick",v=>ms.l=v);hold("bPlace",v=>ms.r=v);
+tap("bDrop",()=>locked&&placeItem());
+tap("bJump",()=>{if(locked&&P.y===0&&lv.zip){P.vy=6.5;sfx(380,.1)}});
 
-    // UV Düzeltmesi (Atlas'tan doğru parçayı almak için)
-    const uv = g.attributes.uv;
-    for(let i=0; i<uv.count; i++) {
-        uv.setXY(i, item.uv[0] + uv.getX(i)*item.uv[2], item.uv[1] + uv.getY(i)*item.uv[3]);
+let act={sprint:0,auto:0};
+let ms={l:0,r:0},autoAt=0,placeAt=0;
+
+function updatePlayer(dt){
+  if(!locked)return;
+  const sp=5*(tm<(act.sprint||0)?1.8:1)*(lv.hiz?1.5:1);
+  const fx=-Math.sin(yaw[0]),fz=-Math.cos(yaw[0]);
+  const rx=Math.cos(yaw[0]),rz=-Math.sin(yaw[0]);
+  let ix=(K.d?1:0)-(K.a?1:0)+jv.x;
+  let iz=(K.w?1:0)-(K.s?1:0)+jv.y;
+  const L=Math.hypot(ix,iz),mg=Math.min(1,L);
+  if(L>0.05){
+    P.x+=(fx*iz+rx*ix)/L*mg*sp*dt;
+    P.z+=(fz*iz+rz*ix)/L*mg*sp*dt;
+  }
+  P.vy-=22*dt;
+  P.y+=P.vy*dt;
+  if(P.y<0){P.y=0;P.vy=0}
+  if(K[" "]&&P.y===0&&lv.zip){P.vy=6.5;sfx(380,.1)}
+  
+  for(const c of COL){
+    const dx=P.x-c.x,dz=P.z-c.z;
+    if(P.y<0.8){
+      const ox=c.hw+0.3-Math.abs(dx),oz=c.hd+0.3-Math.abs(dz);
+      if(ox>0&&oz>0){
+        if(ox<oz)P.x+=Math.sign(dx||1)*ox;
+        else P.z+=Math.sign(dz||1)*oz;
+      }
     }
-    const m = new T.MeshLambertMaterial({map: atlasTex});
-    const mesh = new T.Mesh(g, m);
-    mesh.scale.set(scale, scale, scale);
-    mesh.castShadow = true; mesh.receiveShadow = true;
-    return mesh;
-}
-
-// --- RASTGELE DAĞILIM ---
-const floorItems = [];
-function spawnFloorItems() {
-    floorItems.forEach(m => sc.remove(m));
-    floorItems.length = 0;
-    for(let i = 0; i < 100; i++) {
-        const item = ITEMS[Math.floor(Math.random() * ITEMS.length)];
-        let x, z, valid;
-        do {
-            valid = true;
-            x = (Math.random() * 2 - 1) * (RX - 2); z = (Math.random() * 2 - 1) * (RZ - 2);
-            for(let c of COL) { if(Math.abs(x - c.x) < c.hw + 0.5 && Math.abs(z - c.z) < c.hd + 0.5) { valid = false; break; } }
-            if(Math.abs(x) < 3 && Math.abs(z) > RZ - 3) valid = false;
-        } while(!valid);
-        const mesh = getItemMesh(item, 1);
-        mesh.position.set(x, 0.2, z); mesh.rotation.y = Math.random() * Math.PI * 2;
-        mesh.userData = { item: item, id: i };
-        sc.add(mesh); floorItems.push(mesh);
+  }
+  P.x=Math.max(-RLX+0.5,Math.min(RLX-0.5,P.x));
+  P.z=Math.max(-RZ+0.5,Math.min(RZ-0.5,P.z));
+  
+  if((ms.l||K.f)&&tm>pickAt){pickAt=tm+.15;pickItem()}
+  if((ms.r||K.g||(tm<(act.auto||0)&&tm>autoAt))&&tm>placeAt){placeAt=tm+.07;placeItem();if(tm<(act.auto||0))autoAt=tm+.15}
+  
+  // Yanlış Raf Kırmızı Uyarı
+  let nearWrong=false;
+  if(inventory.length>0){
+    const item=TY[inventory[inventory.length-1][0]];
+    for(const c of COL){
+      if(c.cat&&Math.hypot(P.x-c.x,P.z-c.z)<2.5){
+        if(c.cat!==CATS[item.cat].n)nearWrong=true;
+      }
     }
+  }
+  $("wrong-shelf-overlay").style.boxShadow=nearWrong?"inset 0 0 100px rgba(255,0,0,0.6)":"inset 0 0 100px rgba(255,0,0,0)";
 }
 
-// --- ETKİLEŞİM VE ENVANTER ---
-const raycaster = new T.Raycaster(); const centerScreen = new T.Vector2(0, 0);
-let currentTarget = null; const crosshair = document.getElementById("crosshair"); const hint = document.getElementById("hint");
-
-function updateInteraction() {
-    if(!locked) return;
-    raycaster.setFromCamera(centerScreen, cam);
-    const intersects = raycaster.intersectObjects(floorItems);
-    if(intersects.length > 0 && intersects[0].distance < 4.0) {
-        currentTarget = intersects[0].object;
-        crosshair.classList.add("active"); hint.textContent = currentTarget.userData.item.n + " (Al)"; hint.style.opacity = 1;
-        currentTarget.material.emissive = new T.Color(0x333333);
-    } else {
-        if(currentTarget) currentTarget.material.emissive = new T.Color(0x000000);
-        currentTarget = null; crosshair.classList.remove("active"); hint.style.opacity = 0;
-    }
+// Harita
+const mc=$("map"),mx=mc.getContext("2d");
+function drawMap(){
+  const W=180,H=130;
+  if(mc.width!==W||mc.height!==H){mc.width=W;mc.height=H}
+  const s=Math.min(W/(RLX*2+2),H/(RZ*2+2)),X=x=>W/2+x*s,Z=z=>H/2+z*s;
+  mx.fillStyle="#f8f9fa";mx.fillRect(0,0,W,H);
+  mx.strokeStyle="#ced4da";mx.lineWidth=2;mx.strokeRect(X(-RLX),Z(-RZ),RLX*2*s,RZ*2*s);
+  
+  const showShelf=tm<(act.shelf||0);
+  const st=(selK>=0&&showShelf)?TY[selK]:null,sel=new Set(st?st.cells.map(c=>c[0]):[]);
+  
+  COL.forEach(c=>{
+    if(!c.cat)return;
+    mx.fillStyle=sel.has(c.id)?"#fcc419":"#adb5bd";
+    mx.fillRect(X(c.x)-c.hw*s,Z(c.z)-c.hd*s,c.hw*2*s,c.hd*2*s);
+  });
+  
+  mx.fillStyle="#339af0";mx.fillRect(X(-1.5),Z(RZ)-2,3*s,4);
+  mx.save();
+  mx.translate(X(P.x),Z(P.z));
+  mx.rotate(-yaw[0]);
+  mx.fillStyle="#fcc419";
+  mx.beginPath();mx.moveTo(0,-8);mx.lineTo(5,6);mx.lineTo(-5,6);mx.fill();
+  mx.restore();
 }
 
-const inventory = []; let handMesh = null;
-function pickItem() {
-    if(!currentTarget) return;
-    if(inventory.length >= (5 + lv.cap * 2)) { showToast("Sepet dolu!"); return; }
-    inventory.push(currentTarget.userData.item);
-    currentTarget.visible = false;
-    updateHandModel(); updateBagHUD(); sfx(520, 0.05);
+let last=performance.now(),pickAt=0;
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt=Math.min((now-last)/1000,.05);
+  last=now;
+  
+  if(locked){
+    updatePlayer(dt);
+    updateInteraction();
+    
+    const bob=Math.sin(now*.01)*.02;
+    cam.position.set(P.x,1.6+P.y+bob,P.z);
+    cam.rotation.set(yaw[1],yaw[0],0);
+    if(handMesh)handMesh.position.y=-.3+Math.sin(now*.005)*.01;
+    
+    refreshHUD();
+  }
+  
+  drawMap();
+  R.render(sc,cam);
 }
-function updateHandModel() {
-    if(handMesh) cam.remove(handMesh);
-    if(inventory.length > 0) {
-        const item = inventory[inventory.length - 1];
-        handMesh = getItemMesh(item, 0.7);
-        handMesh.position.set(0.4, -0.3, -0.6);
-        handMesh.rotation.set(0.2, -0.5, 0.1);
-        cam.add(handMesh);
-    }
-}
-function updateBagHUD() { document.getElementById("bag").innerHTML = `<b>Sepet: ${inventory.length}/${5 + lv.cap*2}</b>`; }
-function showToast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.style.opacity = 1; setTimeout(() => t.style.opacity = 0, 1500); }
 
-// --- BECERİ SİSTEMİ ---
-let stars = 8;
-const lv = { cap: 0, hiz: 0, zip: 0, cagir: 0, goster: 0 };
-const bar = [], cd = {};
-const SKILL_DB = {
-    cap: { n: "Kapasite", e: "🎒", max: 3, cost: l => 3 + l * 3, d: l => `Maks. taşıma: ${5 + l * 2}` },
-    hiz: { n: "Hız", e: "🏃", max: 1, cost: () => 8, d: () => "Yürüme hızı +%50" },
-    zip: { n: "Zıplama", e: "🦘", max: 1, cost: () => 7, d: () => "Zıplayarak engelleri aş" },
-    cagir: { n: "Ürünleri Çağır", e: "✨", max: 5, cost: l => 2 + l, d: l => `Bekleme: ${12 - l*1.5}sn` },
-    goster: { n: "Rafı Göster", e: "📍", max: 5, cost: l => 2 + l, d: l => `Bekleme: ${12 - l*1.5}sn` }
+$("mNew").onclick=()=>{
+  $("menu").hidden=true;
+  spawnFloorItems();
+  refreshSkills();
+  sfx(440,.1);
+  if(touch){
+    const f=document.documentElement.requestFullscreen;
+    if(f)f.call(document.documentElement).catch(()=>{});
+    locked=true;
+  }else{
+    $("c").requestPointerLock();
+  }
 };
-function openTree() {
-    document.getElementById("treeStars").textContent = stars;
-    const tl = document.getElementById("tl"); tl.innerHTML = "";
-    for (let id in SKILL_DB) {
-        const s = SKILL_DB[id], l = lv[id], mx = l >= s.max, c = s.cost(l);
-        const row = document.createElement("div"); row.style.cssText = "display:flex; align-items:center; gap:10px; padding:10px; border-bottom:1px solid #eee;";
-        row.innerHTML = `<div style="font-size:24px">${s.e}</div><div style="flex:1"><b>${s.n}</b> (Sv ${l}/${s.max})<br><small style="color:#666">${s.d(l)}</small></div>`;
-        const btn = document.createElement("button"); btn.className = "btn"; btn.textContent = mx ? "MAX" : `⭐ ${c}`; btn.disabled = mx || stars < c;
-        btn.onclick = () => { stars -= c; lv[id]++; if(id==="cagir"||id==="goster"){if(!bar.includes(id))bar.push(id);} openTree(); updateHUD(); };
-        row.appendChild(btn); tl.appendChild(row);
-    }
-}
-function updateHUD() { document.getElementById("st").textContent = stars; }
-document.getElementById("bTree").onclick = () => { document.getElementById("tree").hidden = !document.getElementById("tree").hidden; if(!document.getElementById("tree").hidden) openTree(); };
-document.getElementById("tx").onclick = () => document.getElementById("tree").hidden = true;
-document.addEventListener("keydown", e => { if(e.key.toLowerCase() === "k" && locked) { document.getElementById("tree").hidden = !document.getElementById("tree").hidden; if(!document.getElementById("tree").hidden) openTree(); } if(e.key === "1" && bar[0]) useSkill(bar[0]); if(e.key === "2" && bar[1]) useSkill(bar[1]); });
-function useSkill(id) {
-    if (!lv[id] || (cd[id] && performance.now() < cd[id])) return;
-    if (id === "cagir") { for(let i = 0; i < 3 && floorItems.length > 0; i++) { const idx = Math.floor(Math.random() * floorItems.length); const m = floorItems.splice(idx, 1)[0]; m.position.set(P.x + (Math.random()-0.5)*2, 0.2, P.z + (Math.random()-0.5)*2); } showToast("Ürünler Çağrıldı!"); cd[id] = performance.now() + (12000 - lv[id]*1500); }
-    if (id === "goster") { showToast("Raf Işıkları Açıldı!"); cd[id] = performance.now() + (12000 - lv[id]*1500); }
-}
+document.addEventListener("pointerlockchange",()=>{locked=document.pointerLockElement===$("c")});
 
-// --- DİZME VE OYUN DÖNGÜSÜ ---
-function placeItem() {
-    if (inventory.length === 0) return;
-    const item = inventory.pop();
-    const dir = new T.Vector3(); cam.getWorldDirection(dir);
-    const px = P.x + dir.x * 2, pz = P.z + dir.z * 2;
-    let nearShelf = null;
-    for(let c of COL) { if(Math.abs(px - c.x) < 2 && Math.abs(pz - c.z) < 2) { nearShelf = c; break; } }
-    const mesh = getItemMesh(item, 1);
-    if (nearShelf) {
-        mesh.position.set(nearShelf.x, 0.6 + (Math.random()*0.4), nearShelf.z);
-        if (nearShelf.cat !== item.k) { mesh.material.color.setHex(0xff0000); showToast("Yanlış Raf!"); } 
-        else { showToast("Doğru Raf +1 Yıldız"); stars++; updateHUD(); }
-    } else { mesh.position.set(px, 0.2, pz); floorItems.push(mesh); }
-    sc.add(mesh); updateHandModel(); sfx(660, 0.05);
+requestAnimationFrame(loop);
 }
-document.addEventListener("keydown", e => { if(e.key.toLowerCase() === "g" && locked) placeItem(); });
-document.getElementById("bPlace").addEventListener("pointerdown", e => { e.preventDefault(); if(locked) placeItem(); });
-document.getElementById("bPick").addEventListener("pointerdown", e => { e.preventDefault(); if(locked) pickItem(); });
-document.getElementById("bJump").addEventListener("pointerdown", e => { e.preventDefault(); if(locked && P.y === 0 && lv.zip) { P.vy = 5.5; sfx(380, 0.1); } });
-
-function updatePlayer(dt) {
-    if(!locked) return;
-    const sp = 5 * (lv.hiz ? 1.5 : 1);
-    const fx = -Math.sin(yaw[0]), fz = -Math.cos(yaw[0]), rx = Math.cos(yaw[0]), rz = -Math.sin(yaw[0]);
-    let ix = (K.d ? 1 : 0) - (K.a ? 1 : 0) + jv.x, iz = (K.w ? 1 : 0) - (K.s ? 1 : 0) + jv.y;
-    const L = Math.hypot(ix, iz), mg = Math.min(1, L);
-    if (L > 0.05) { P.x += (fx * iz + rx * ix) / L * mg * sp * dt; P.z += (fz * iz + rz * ix) / L * mg * sp * dt; }
-    P.vy -= 22 * dt; P.y += P.vy * dt; if (P.y < 0) { P.y = 0; P.vy = 0; }
-    if (K[" "] && P.y === 0 && lv.zip) { P.vy = 5.5; sfx(380, 0.1); }
-    for (const c of COL) {
-        const dx = P.x - c.x, dz = P.z - c.z;
-        if (P.y < 0.6) { const ox = c.hw + 0.3 - Math.abs(dx), oz = c.hd + 0.3 - Math.abs(dz); if (ox > 0 && oz > 0) { if (ox < oz) P.x += Math.sign(dx || 1) * ox; else P.z += Math.sign(dz || 1) * oz; } }
-    }
-    P.x = Math.max(-RX + 0.5, Math.min(RX - 0.5, P.x)); P.z = Math.max(-RZ + 0.5, Math.min(RZ - 0.5, P.z));
-}
-
-const mc = document.getElementById("map"), mx = mc.getContext("2d");
-function drawMap() {
-    const W = 180, H = 130; if (mc.width !== W || mc.height !== H) { mc.width = W; mc.height = H; }
-    const s = Math.min(W / (RX * 2 + 2), H / (RZ * 2 + 2)), X = x => W/2 + x*s, Z = z => H/2 + z*s;
-    mx.fillStyle = "#f8f9fa"; mx.fillRect(0, 0, W, H); mx.strokeStyle = "#ced4da"; mx.lineWidth = 2; mx.strokeRect(X(-RX), Z(-RZ), RX*2*s, RZ*2*s);
-    COL.forEach(c => { const isShowing = performance.now() < (cd["goster"] || 0); mx.fillStyle = isShowing ? "#51cf66" : "#adb5bd"; mx.fillRect(X(c.x) - c.hw*s, Z(c.z) - c.hd*s, c.hw*2*s, c.hd*2*s); });
-    mx.fillStyle = "#339af0"; mx.fillRect(X(-1.5), Z(RZ)-2, 3*s, 4);
-    mx.save(); mx.translate(X(P.x), Z(P.z)); mx.rotate(-yaw[0]); mx.fillStyle = "#fcc419"; mx.beginPath(); mx.moveTo(0, -8); mx.lineTo(5, 6); mx.lineTo(-5, 6); mx.fill(); mx.restore();
-}
-
-let last = performance.now();
-function loop(now) {
-    requestAnimationFrame(loop);
-    const dt = Math.min((now - last) / 1000, 0.05); last = now;
-    if (locked) {
-        updatePlayer(dt); updateInteraction();
-        const bob = Math.sin(now * 0.01) * 0.02;
-        cam.position.set(P.x, 1.6 + P.y + bob, P.z); cam.rotation.set(yaw[1], yaw[0], 0);
-        if(handMesh) handMesh.position.y = -0.3 + Math.sin(now * 0.005) * 0.01;
-    }
-    drawMap(); R.render(sc, cam);
-}
-
-document.getElementById("mNew").onclick = () => {
-    document.getElementById("menu").hidden = true; spawnFloorItems(); updateHUD(); updateBagHUD();
-    sfx(440, 0.1);
-    if(touch) { const f = document.documentElement.requestFullscreen; if(f) f.call(document.documentElement).catch(()=>{}); locked = true; } 
-    else { document.getElementById("c").requestPointerLock(); }
-};
-document.addEventListener("pointerlockchange", () => { locked = document.pointerLockElement === document.getElementById("c"); });
-P.x = 0; P.z = RZ - 1.5; requestAnimationFrame(loop);
-</script>
-</body>
-</html>
+</script></body></html>
