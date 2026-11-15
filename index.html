@@ -76,7 +76,7 @@ canvas#c{touch-action:none}
 <p class="d"><b>WASD</b> yürü · <b>Fare</b> bak · <b>Sol tık (basılı)</b> yerden al · <b>F / sağ tık (basılı)</b> rafa diz</p>
 <p class="d"><b>Q/E veya tekerlek</b> elindeki ürünü değiştir · <b>G</b> bırak · <b>Boşluk</b> zıpla · <b>1-4</b> beceriler · <b>K</b> beceri ağacı · <b>M</b> harita</p>
 <p class="m">Telefonu <b>yatay</b> tut. Sol joystick yürür, ekranı sürükleyince bakarsın. ✋ basılı tut: nişan aldığın ürünü al · 📥 basılı tut: doğru rafta diz · ◀ ▶ ürün değiştir · ⬇️ bırak · ⤴️ zıpla · 🗺 harita · ⭐ beceri ağacı</p>
-<p>Müdür: <b>Bir robot markete girip raflardaki bütün ürünleri boşalttı ve ortaya yığdı!</b> Hepsini topla ve yerlerine diz. Tüm ürünler yerine dizilmeden çıkış kapısı açılmaz.</p>
+<p>Müdür: <b>Bir robot markete girip raflardaki bütün ürünleri boşalttı ve ortaya yığdı!</b> Hepsini topla ve yerlerine diz: meyve-sebze <b>manav tezgâhında kasalara</b>, süt ve dondurulmuş ürünler <b>soğutucu dolaplara</b>, şaraplar <b>şarap bölümüne</b>, gerisi raflara. Tüm ürünler yerine dizilmeden çıkış kapısı açılmaz. Koridor başlarındaki tabelalara ve haritaya (M) bak. Yerdeki ürüne bakınca adı altta çıkar.</p>
 <div class="btns"><button id="go">▶ Başla (tıkla)</button><button id="toMenu" class="sec">☰ Ana menü</button></div></div></div>
 <div id="end" hidden><div class="card"><h2>Market tertemiz! 🎉</h2><p id="res"></p><button onclick="try{localStorage.removeItem('marketDuzeni_v2')}catch(e){};location.reload()">Tekrar oyna</button></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -295,7 +295,6 @@ function loop(now){
     if((ms.r||K.f)&&tm>placeAt){placeAt=tm+.07;tryPlace()}
     if(tm<(act.auto||0)&&tm>autoAt){autoAt=tm+.15;tryPlace()}
     
-    // Yanlış Raf Kırmızı Uyarı
     let nearWrong=false;
     if(selK>=0&&!done){
       const item=TY[selK];
@@ -313,7 +312,6 @@ function loop(now){
   armT=Math.max(0,armT-dt*4);if(HAND.visible){HAND.position.set(.3,-.27+Math.sin(wt)*.012-armT*.05,-.62+armT*.06);HAND.rotation.set(.2+armT*.15,-.6,.12)}
   cam.position.set(P.x,1.7+P.y+Math.abs(Math.sin(wt))*.04,P.z);cam.rotation.set(yaw[1],yaw[0],0);
   
-  /* beceri efektleri */
   const showF=tm<(act.find||0)&&selK>=0;
   if(showF&&tm>mt){mt=tm+.4;const ids=nearest(selK,14);FB.forEach((b,n)=>{b.visible=n<ids.length;if(b.visible){const f=FP[selK][ids[n]];b.position.set(f[0],3,f[2])}})}
   if(!showF)FB.forEach(b=>b.visible=false);
